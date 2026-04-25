@@ -86,9 +86,12 @@ Shape (each is a key under `models.providers`):
 
 | Provider key | baseUrl | api | Notes |
 |---|---|---|---|
-| `dashscope` | `https://coding.dashscope.aliyuncs.com/apps/anthropic` | `anthropic` | Aliyun's Anthropic-compatible coding gateway. No bundled plugin, so this is the only path. `pnpm openclaw models list` will show "Auth: -" / "missing" tag — that's cosmetic; runtime calls still attempt and the fallback chain catches if they fail. |
+| `dashscope` | `https://coding.dashscope.aliyuncs.com/apps/anthropic` | `anthropic-messages` | Aliyun's coding plan — Anthropic protocol but serves Chinese models (qwen, glm, kimi, minimax). **Not Claude.** Get the actual model lineup from `~/.config/agentry/tokens.md`. |
+| `volcengine` | `https://ark.cn-beijing.volces.com/api/coding/v1` | `openai-completions` | ByteDance Volcano coding plan — Doubao + DeepSeek models. Also see tokens.md for current model IDs. |
 | `bitexingai` (or any name) | `https://bitexingai.com/v1/chat/completions` | `openai-completions` | Generic 3rd-party OpenAI-compatible relays go here. |
 | `ollama` | `http://127.0.0.1:11434` | `ollama` | Self-hosted local. |
+
+**Schema enum gotcha**: the `api` field is a strict enum — valid values are `openai-completions`, `openai-responses`, `openai-codex-responses`, `anthropic-messages`, `google-generative-ai`, `github-copilot`, `bedrock-converse-stream`, `ollama`, `azure-openai-responses`. Bare `anthropic` (without `-messages`) is rejected at config-load time and breaks every CLI call until fixed. The bundled qwen-portal entry uses `openai-completions` as a hint for OpenAI-compatible relays.
 
 Each provider entry needs a `models[]` array with the model IDs you want callable. Minimal model entry:
 
