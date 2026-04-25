@@ -76,16 +76,19 @@ After every `config set`, the CLI prints **"Restart the gateway to apply"** — 
 
 ## 4. Register callable model providers
 
-`auth-profiles.json` (next step) wires *credentials* but doesn't register *models* — and OpenClaw won't let the agent route to a model that's not in its registry. Provider entries live in `~/.openclaw/openclaw.json` under `models.providers`. The bundled providers cover only what shipped with OpenClaw (e.g. `qwen-portal`, `codex`, `ollama`); any additional provider you have credentials for needs an explicit entry.
+For most providers you do **not** need to write `models.providers` entries — bundled plugins under `~/openclaw/extensions/<id>/openclaw.plugin.json` claim model-id prefixes (e.g. anthropic claims `claude-*`, openai claims `gpt-*`/`o1`/`o3`/`o4`, google claims gemini IDs) and **auto-discover** their model catalogs once an `auth-profiles.json` entry exists for that provider (next step). Adding the auth profile is enough; the model becomes callable immediately.
 
-Common additions and their canonical shape (each is a key under `models.providers`):
+The CLI even **strips** custom `models.providers` entries you write by hand for plugin-covered providers (the next `pnpm openclaw config set` or gateway restart re-normalizes openclaw.json against the schema and drops them). Do not fight this — for openai / anthropic / openrouter / google, skip step 4 entirely and rely on plugin auto-discovery.
+
+`models.providers` edits *do* survive for providers without a bundled plugin — e.g. **DashScope** (Aliyun's Anthropic-compatible coding gateway), **bitexingai** (3rd-party OpenAI-compatible relay), self-hosted Ollama, etc. Use this section only for those.
+
+Shape (each is a key under `models.providers`):
 
 | Provider key | baseUrl | api | Notes |
 |---|---|---|---|
-| `openai` | `https://api.openai.com/v1` | `openai-completions` | Standard public API. Use for `gpt-4o*`, `o3*`, `o4*`, etc. **Note**: OpenClaw also bundles a separate `codex` provider that points at `chatgpt.com/backend-api/v1` for `gpt-5.x` ChatGPT-consumer-API models — that one needs OAuth (`pnpm openclaw … openai-codex` browser login), **not** `sk-proj-…` keys. To use `sk-proj-…` with any model, register it under a fresh `openai` provider, never the bundled `codex` one. |
-| `anthropic` | `https://api.anthropic.com` | `anthropic` | Public API. Use for `claude-*` models. |
-| `openrouter` | `https://openrouter.ai/api/v1` | `openai-completions` | Catch-all routing. Model IDs are namespaced (`openai/gpt-4o-mini`, `anthropic/claude-sonnet-4.5`). |
-| `dashscope` | `https://coding.dashscope.aliyuncs.com/apps/anthropic` | `anthropic` | Aliyun's Anthropic-compatible coding gateway. Models register fine but `pnpm openclaw models list` may show "Auth: -" / "missing" because there's no bundled plugin to validate it — runtime calls still work; the fallback chain catches if they don't. |
+| `dashscope` | `https://coding.dashscope.aliyuncs.com/apps/anthropic` | `anthropic` | Aliyun's Anthropic-compatible coding gateway. No bundled plugin, so this is the only path. `pnpm openclaw models list` will show "Auth: -" / "missing" tag — that's cosmetic; runtime calls still attempt and the fallback chain catches if they fail. |
+| `bitexingai` (or any name) | `https://bitexingai.com/v1/chat/completions` | `openai-completions` | Generic 3rd-party OpenAI-compatible relays go here. |
+| `ollama` | `http://127.0.0.1:11434` | `ollama` | Self-hosted local. |
 
 Each provider entry needs a `models[]` array with the model IDs you want callable. Minimal model entry:
 
@@ -107,6 +110,8 @@ done
 ```
 
 Order the fallback chain by what should be tried first on the primary's failure — usually a different provider (cross-provider fallbacks beat same-provider, since most outages are provider-wide).
+
+**Note on the bundled `codex` provider:** OpenClaw ships a `codex` provider entry pointing at `chatgpt.com/backend-api/v1` for `gpt-5.x` ChatGPT-consumer-API models. That endpoint needs **OpenAI's browser OAuth**, not `sk-proj-…` keys. If you have `sk-proj-…` keys and want to call any `gpt-*` model (including `gpt-5.4-mini`), the openai plugin's auto-discovery against `auth-profiles.json` covers it — no need to register under either `codex` or a custom `openai` provider entry.
 
 ## 5. Set credentials
 
