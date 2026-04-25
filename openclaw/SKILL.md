@@ -11,7 +11,7 @@ Umbrella skill for managing the OpenClaw productive coding agent on this host.
 
 Parse the sub-command from the invocation:
 - If invoked with `args` (e.g. via slash command `$ARGUMENTS`), the first whitespace-delimited token is the sub-command.
-- Otherwise infer from the user's request: install/setup → `setup`; pull/upgrade/refresh → `update`; check/diagnose/health → `doctor`; show/snapshot/report → `status`; snapshot config/save state → `backup`; dashboard/control-ui/url/token → `dashboard`.
+- Otherwise infer from the user's request: install/setup → `setup`; pull/upgrade/refresh → `update`; check/diagnose/health → `doctor`; show/snapshot/report → `status`; snapshot config/save state → `backup`; dashboard/control-ui/url/token → `dashboard`; approve/pairing/whitelist user → `pairing`.
 
 Then **Read the matching sub-doc and follow it**:
 
@@ -23,6 +23,7 @@ Then **Read the matching sub-doc and follow it**:
 | `status`    | `status.md`    |
 | `backup`    | `backup.md`    |
 | `dashboard` | `dashboard.md` |
+| `pairing`   | `pairing.md`   |
 
 If the sub-command is missing or unrecognized, print this menu and stop:
 
@@ -34,6 +35,7 @@ If the sub-command is missing or unrecognized, print this menu and stop:
   status     Read-only health snapshot (no mutations)
   backup     Tarball ~/.openclaw/ to ~/.openclaw/backups/
   dashboard  Print or open the Control UI URL (token from ~/openclaw/.env)
+  pairing    Approve a pending channel-user pairing code (Feishu/Telegram/...)
 ```
 
 ## Conventions for all sub-docs

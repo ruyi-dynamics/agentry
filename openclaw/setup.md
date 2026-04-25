@@ -2,12 +2,13 @@
 
 Goal: get `~/openclaw` runnable as a productive coding agent on this Mac, with a working default model and credentials wired in.
 
-A complete fresh setup runs six phases. Don't skip any — running install/build alone leaves the agent with the bundled `qwen-portal/coder-model` default, which has no auth on a fresh machine.
+A complete fresh setup runs six phases plus one strongly-recommended channel step. Don't skip phases 1–6 — running install/build alone leaves the agent with the bundled `qwen-portal/coder-model` default, which has no auth on a fresh machine. Step 5b (Feishu) is optional but **strongly recommended** if the user lives in the Feishu/Lark ecosystem; it's how they actually talk to the agent from a phone or chat client.
 
 ```
 1. Preflight  →  2. Install/build  →  3. Configure agent defaults
                                       →  4. Register model providers
                                       →  5. Set credentials
+                                      →  5b. (recommended) Wire a Feishu channel
                                       →  6. Health check (doctor)
 ```
 
@@ -173,6 +174,90 @@ When replacing a key in place: clear that profile's `usageStats` entry too — `
 
 Brave Search is set under `plugins.entries.brave.config.webSearch.apiKey`, not in `auth-profiles.json` — doctor's auto-migration handles moving any legacy `tools.web.search.apiKey` there.
 
+## 5b. (Strongly recommended) Wire a Feishu channel
+
+Without a channel, OpenClaw is reachable only via the Control UI dashboard or via local CLI calls. A Feishu bot makes the agent talk to you from your phone, your laptop, or any group chat — that's usually the actual point of running OpenClaw, not a nice-to-have.
+
+### A. Create the Feishu app (browser, one-time bootstrap)
+
+Cannot be done from the CLI — Feishu's app-management API requires an existing app with `application:application:self_manage` scope, so the very first app must come from the web console.
+
+1. Visit <https://open.feishu.cn/app> and create a "自建应用" (self-built app). Pick a name + icon.
+2. From the app's **凭证与基础信息** page, copy `App ID` (starts `cli_…`) and `App Secret`.
+3. Under **应用功能** → enable **机器人** (bot) capability.
+4. Under **事件与回调** → enable event subscriptions; pick **WebSocket** transport (no public webhook needed; matches OpenClaw's `connectionMode: "websocket"`). Subscribe to `im.message.receive_v1` at minimum.
+5. Under **API 权限** → click **权限 JSON 导入** and paste the contents of [`feishu-scopes.json`](feishu-scopes.json) from this skill (or apply via API if the user prefers — see § C below).
+6. Save and **publish a version** of the app (without publishing, scopes don't take effect even when granted).
+7. Back at app-page top-right, **install** the app to the Feishu org / search org admins for approval.
+
+The scope template at `~/.claude/skills/openclaw/feishu-scopes.json` covers what OpenClaw + the bundled Feishu skill need:
+- **Tenant** (bot identity, org-wide): IM read/send, p2p + group at-msg, pins, reactions, basic contact lookup, cardkit, recall/update, doc readonly, app self-manage.
+- **User** (per-user OAuth, agent-as-user): full Bitable / Wiki / Docs / Sheets / Drive / Calendar / Tasks / Whiteboard surface plus IM read.
+
+### B. Wire the credentials into OpenClaw (host, idempotent)
+
+Edit `~/.openclaw/openclaw.json` to set the credentials at the **runtime path** (`channels.feishu.accounts.<id>` — see the channel-config trap in § 4 above):
+
+```json
+{
+  "plugins": {
+    "entries": { "feishu": { "enabled": true } }
+  },
+  "channels": {
+    "feishu": {
+      "enabled": true,
+      "accounts": {
+        "default": {
+          "enabled": true,
+          "name": "<display name>",
+          "appId": "cli_…",
+          "appSecret": "…",
+          "domain": "feishu",
+          "connectionMode": "websocket",
+          "streaming": true
+        }
+      }
+    }
+  }
+}
+```
+
+Restart the gateway and probe:
+
+```bash
+launchctl kickstart -k gui/$UID/ai.openclaw.gateway
+cd ~/openclaw && pnpm openclaw --no-color channels status --deep --probe | grep -i feishu
+# expect: "Feishu default (<name>): enabled, configured, running, works"
+```
+
+### C. (Optional) Apply scopes via API instead of UI paste
+
+Once the app exists and has been authorized to manage itself, scopes can be added programmatically:
+
+```bash
+APP_ID=cli_…
+TENANT_TOKEN=$(curl -sS -X POST https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal \
+  -H 'Content-Type: application/json' \
+  -d "{\"app_id\":\"$APP_ID\",\"app_secret\":\"$APP_SECRET\"}" | jq -r .tenant_access_token)
+
+curl -sS -X POST "https://open.feishu.cn/open-apis/application/v6/applications/$APP_ID/scope_request" \
+  -H "Authorization: Bearer $TENANT_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d @<(jq '{scopes:.scopes}' ~/.claude/skills/openclaw/feishu-scopes.json)
+```
+
+Faster but the org admin still needs to approve scope requests in the Developer Console.
+
+### D. First user pair — recurring per-sender gate
+
+When *any* Feishu user (including the bot owner) DMs the bot for the first time, the bot replies with a one-time pairing code. The bot owner approves with:
+
+```bash
+cd ~/openclaw && pnpm openclaw --no-color pairing approve feishu <CODE>
+```
+
+This is a recurring operation, not a one-time setup step. See [`pairing.md`](pairing.md) for the full sub-doc; invokable as `/openclaw pairing <code>`.
+
 ## 6. Apply + health check
 
 Restart the gateway so it re-reads config + credentials, then run doctor:
@@ -226,4 +311,5 @@ Re-running `setup` on a healthy install:
 - step 3 (config get → fix): no-op if defaults are already correct
 - step 4 (model providers): no-op if `models.providers` already lists what you want
 - step 5 (auth profiles): no-op if profiles match tokens.md
+- step 5b (Feishu): no-op if `channels.feishu.accounts.<id>` exists; pairing approvals are per-sender, not per-setup
 - doctor: green
