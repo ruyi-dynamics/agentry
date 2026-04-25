@@ -11,31 +11,33 @@ Umbrella skill for managing the OpenClaw productive coding agent on this host.
 
 Parse the sub-command from the invocation:
 - If invoked with `args` (e.g. via slash command `$ARGUMENTS`), the first whitespace-delimited token is the sub-command.
-- Otherwise infer from the user's request: install/setup → `setup`; pull/upgrade/refresh → `update`; check/diagnose/health → `doctor`; show/snapshot/report → `status`; snapshot config/save state → `backup`; dashboard/control-ui/url/token → `dashboard`; approve/pairing/whitelist user → `pairing`.
+- Otherwise infer from the user's request: install/setup → `setup`; pull/upgrade/refresh → `update`; check/diagnose/health → `doctor`; show/snapshot/report → `status`; snapshot config/save state → `backup`; dashboard/control-ui/url/token → `dashboard`; approve/pairing/whitelist user → `pairing`; bootstrap/wire/setup feishu app → `feishu-bootstrap`.
 
 Then **Read the matching sub-doc and follow it**:
 
 | Sub | File |
 |---|---|
-| `setup`     | `setup.md`     |
-| `update`    | `update.md`    |
-| `doctor`    | `doctor.md`    |
-| `status`    | `status.md`    |
-| `backup`    | `backup.md`    |
-| `dashboard` | `dashboard.md` |
-| `pairing`   | `pairing.md`   |
+| `setup`            | `setup.md`            |
+| `update`           | `update.md`           |
+| `doctor`           | `doctor.md`           |
+| `status`           | `status.md`           |
+| `backup`           | `backup.md`           |
+| `dashboard`        | `dashboard.md`        |
+| `pairing`          | `pairing.md`          |
+| `feishu-bootstrap` | `feishu-bootstrap.md` |
 
 If the sub-command is missing or unrecognized, print this menu and stop:
 
 ```
 /openclaw <sub>
-  setup      First-time host install (pnpm install + build, bootstrap ~/.openclaw)
-  update     Pull latest source, rebuild, run doctor (auto-backups first)
-  doctor     Run openclaw doctor and interpret the output
-  status     Read-only health snapshot (no mutations)
-  backup     Tarball ~/.openclaw/ to ~/.openclaw/backups/
-  dashboard  Print or open the Control UI URL (token from ~/openclaw/.env)
-  pairing    Approve a pending channel-user pairing code (Feishu/Telegram/...)
+  setup             First-time host install (pnpm install + build, bootstrap ~/.openclaw)
+  update            Pull latest source, rebuild, run doctor (auto-backups first)
+  doctor            Run openclaw doctor and interpret the output
+  status            Read-only health snapshot (no mutations)
+  backup            Tarball ~/.openclaw/ to ~/.openclaw/backups/
+  dashboard         Print or open the Control UI URL (token from ~/openclaw/.env)
+  pairing           Approve a pending channel-user pairing code (Feishu/Telegram/...)
+  feishu-bootstrap  Wire a freshly-created Feishu app end-to-end (validate → scopes → config → restart → probe)
 ```
 
 ## Conventions for all sub-docs
