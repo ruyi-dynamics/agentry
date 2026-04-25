@@ -93,6 +93,20 @@ Shape (each is a key under `models.providers`):
 
 **Schema enum gotcha**: the `api` field is a strict enum — valid values are `openai-completions`, `openai-responses`, `openai-codex-responses`, `anthropic-messages`, `google-generative-ai`, `github-copilot`, `bedrock-converse-stream`, `ollama`, `azure-openai-responses`. Bare `anthropic` (without `-messages`) is rejected at config-load time and breaks every CLI call until fixed. The bundled qwen-portal entry uses `openai-completions` as a hint for OpenAI-compatible relays.
 
+### Adding a chat channel (Feishu / Lark / Telegram / Discord / etc.)
+
+Channels live under a **separate** top-level key from plugins. The plugin must be enabled and the credentials must live at the channel path:
+
+- `plugins.entries.<channel>.enabled = true` — turns the bundled plugin on (some, like `feishu`, ship disabled-by-default).
+- `channels.<channel>.enabled = true` — turns the channel on at the runtime layer.
+- `channels.<channel>.accounts.<account-id>` — where credentials actually live and are read from.
+
+**Trap**: the Feishu plugin schema also documents `plugins.entries.feishu.config.accounts.<id>`. That path passes config validation but is **silently ignored** by the runtime — channel will report "enabled, not configured" with no error log. Always put the credentials at `channels.<channel>.accounts.<id>`. The `pnpm openclaw channels add --channel <name> ...` CLI sometimes only writes the parent (`channels.<channel> = {enabled: true}`) without populating accounts, so verify with `python3 -c "import json; print(json.load(open('~/.openclaw/openclaw.json'.replace('~', '$HOME')))['channels'])"` after running it.
+
+For Feishu specifically:
+- `connectionMode: "websocket"` — long-poll over the Feishu app, only needs appId + appSecret. No public webhook required.
+- `connectionMode: "webhook"` — HTTP callbacks; additionally needs `verificationToken` + `encryptKey` from the Feishu Developer Console.
+
 Each provider entry needs a `models[]` array with the model IDs you want callable. Minimal model entry:
 
 ```json
