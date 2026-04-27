@@ -8,7 +8,8 @@ Each skill is self-contained and portable enough to drop into `~/.claude/skills/
 
 | Skill | Sub-commands | Purpose |
 |---|---|---|
-| [`openclaw/`](openclaw/) | `setup`, `update`, `doctor`, `status`, `backup` | Install, update, diagnose, snapshot OpenClaw at `~/openclaw` |
+| [`openclaw/`](openclaw/) | `setup`, `update`, `doctor`, `status`, `backup`, `dashboard`, `pairing`, `feishu-bootstrap` | Install, update, diagnose, snapshot OpenClaw at `~/openclaw` |
+| [`hermes/`](hermes/) | `setup`, `update`, `doctor`, `status`, `backup`, `dashboard`, `pairing`, `claw-migrate` | Install, update, diagnose, snapshot Hermes Agent at `~/.hermes` |
 | [`token-doctor/`](token-doctor/) | `test`, `list` | Probe credentials in `~/.config/agentry/tokens.md` and report which still work (read-only) |
 
 Invoke from Claude Code via slash command — `/openclaw doctor`, `/token-doctor test` — or natural language ("check my tokens", "update openclaw").

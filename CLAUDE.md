@@ -7,10 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `agentry/` is a workspace for authoring **skills that manage the productive-coding-agent stack on this PC** — install/update agents themselves (OpenClaw, future Hermes) and the supporting infrastructure they share (e.g. credentials). Each skill is self-contained and portable enough to drop into `~/.claude/skills/` once stable.
 
 Currently shipped:
-- `openclaw/` — umbrella skill, sub-commands `setup / update / doctor / status / backup`, invoked via `/openclaw <sub>` or natural language.
+- `openclaw/` — umbrella skill, sub-commands `setup / update / doctor / status / backup / dashboard / pairing / feishu-bootstrap`, invoked via `/openclaw <sub>` or natural language.
+- `hermes/` — umbrella skill, sub-commands `setup / update / doctor / status / backup / dashboard / pairing / claw-migrate`, invoked via `/hermes <sub>` or natural language.
 - `token-doctor/` — umbrella skill, sub-commands `test / list`, probes credentials in `~/.config/agentry/tokens.md` and reports validity. Read-only; never mutates the inventory.
-
-Next: Hermes, when its install location and CLI surface are known.
 
 `plans/` holds dated implementation plans (e.g. `2026-04-25-openclaw-skill-set.md`) — design notes that predate or accompany skill changes. Not loaded by the harness; reference material for humans and future sessions.
 
@@ -52,13 +51,23 @@ Full source checkout, not installed via brew/npm. Treat `~/openclaw` as the sour
 - For doctor/repair flows, OpenClaw exposes `openclaw doctor`. Prefer it over hand-editing config when an update skill needs to reconcile state.
 - Plugins live in `~/openclaw/extensions/<id>/`; skills bundled with OpenClaw live in `~/openclaw/skills/`. These are *internal* to OpenClaw — an `agentry` skill should not edit them, only invoke OpenClaw's own CLI.
 
-### Hermes — not yet present on this machine
+### Hermes — `~/.hermes/` (installed 2026-04-26)
 
-No `hermes` binary, package, or directory exists on the PC at the time of writing. When the Hermes skill is authored, document here:
-- canonical install location (path or package manager)
-- update command
-- where its config/state lives
-so future Claude sessions don't have to rediscover it.
+Managed by the `hermes` skill in this workspace — invoke via `/hermes <sub>` or natural language ("set up hermes", "update hermes", etc.). The skill is symlinked to `~/.claude/skills/hermes`.
+
+NousResearch's Python-based agent framework. Installed via `curl|bash` (not git clone like OpenClaw):
+
+- **Installer entry**: `https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh` → uses `uv` for Python deps. Always pass `--skip-setup` from a non-TTY context (interactive wizard hangs otherwise).
+- **Code lives at**: `~/.hermes/hermes-agent/` (cloned by installer, kept current by `hermes update`).
+- **State + config at**: `~/.hermes/{config.yaml, .env, sessions/, logs/, memories/, hooks/, skills/, cron/, pairing/}`. The `.env` is plaintext provider keys — load via dotenv, NOT shell init (gateway daemon doesn't see `~/.zprofile`).
+- **CLI binary**: symlink at `~/.local/bin/hermes` (already on PATH).
+- **Update**: `hermes update` (built-in: `git stash; git pull; uv sync`).
+- **Backup**: `hermes backup [--quick]` (built-in zip; excludes the `hermes-agent/` source dir).
+- **Migration from OpenClaw**: `hermes claw migrate` (see `hermes/claw-migrate.md`).
+
+**VPN-routing trap on this Mac**: the installer's git clone over HTTPS gets mid-stream-canceled when Easy Connect VPN + ClashVerge TUN are running together (we saw the same on `git push`). Workaround: pre-clone via SSH (`git clone git@github.com:NousResearch/hermes-agent.git ~/.hermes/hermes-agent`) before re-running the installer; the installer detects the existing clone and switches to update mode. After install, persist the SSH remote so `hermes update` keeps working through the VPN: `cd ~/.hermes/hermes-agent && git remote set-url origin git@github.com:NousResearch/hermes-agent.git`.
+
+Hermes has **its own internal skill ecosystem** at `~/.hermes/skills/` (74 bundled, separate from Claude Code's `~/.claude/skills/`). An agentry skill should not edit those directly — invoke `hermes skills …` if needed.
 
 ## Working in this directory
 
