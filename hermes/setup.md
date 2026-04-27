@@ -96,12 +96,45 @@ Then either restart any running `hermes gateway` or just re-launch `hermes`.
 ### Set the default model
 
 ```bash
-hermes model            # interactive picker
-# OR direct:
-hermes config           # opens config.yaml; edit `model:` section
+hermes model                           # interactive picker
+hermes config set model.default <id>   # comment-preserving direct set
+# OR open editor:
+hermes config edit
 ```
 
-For parity with the OpenClaw default we configured (Tao Wei OpenAI), set primary to `openai/gpt-4o-mini` or `openai/o4-mini` (Hermes uses public OpenAI API model IDs, not OpenClaw's `gpt-5.4-mini` which is a ChatGPT-consumer-API name).
+**Always prefer `hermes config set` over hand-editing config.yaml**: PyYAML's `safe_dump` strips embedded comments and the file ships with ~46KB of inline documentation that's worth keeping. `hermes config set` preserves it.
+
+For parity with the OpenClaw default we configured (Tao Wei OpenAI), candidates:
+- `openai/gpt-4o-mini` via OpenRouter — universally cheap, ~$0.15/1M
+- `dashscope/qwen3-coder-plus` via the DashScope coding plan — flat-rate subscription, effectively free per call (this is the current default on this machine, set 2026-04-27)
+- `openai/o4-mini` for reasoning tasks
+
+### Custom providers (DashScope, Volcengine, etc.)
+
+Hermes exposes non-bundled providers via `custom_providers[]` in `config.yaml`:
+
+```yaml
+custom_providers:
+  - name: dashscope
+    base_url: https://coding.dashscope.aliyuncs.com/v1
+    api_key: ""                          # leave empty; Hermes reads <NAME>_API_KEY from .env
+    api_mode: chat_completions           # also: anthropic_messages
+  - name: volcengine
+    base_url: https://ark.cn-beijing.volces.com/api/coding/v1
+    api_key: ""
+    api_mode: chat_completions
+```
+
+Then put the key as `DASHSCOPE_API_KEY=sk-sp-…` (or `VOLCENGINE_API_KEY=…`) in `~/.hermes/.env`. Hermes routes by name prefix: `model.default = dashscope/qwen3-coder-plus` matches `custom_providers[name=dashscope]`.
+
+The cleanest way to populate these is `hermes claw migrate --preset full --migrate-secrets --yes` (see `claw-migrate.md`) — it auto-imports DashScope + Volcengine + Qwen Portal from a previously-configured OpenClaw install.
+
+### Doctor false positives to ignore
+
+After wiring the above, `hermes doctor` may report:
+
+- **`✗ Anthropic API (invalid API key)`** — expected if your Anthropic account has direct-API support disabled. The key is kept in tokens.md for reference only; route Claude-style traffic through OpenRouter (`anthropic/claude-…` model IDs) instead.
+- **`✗ Alibaba/DashScope (invalid API key)`** — false positive. Doctor probes the standard-tier `dashscope.aliyuncs.com` endpoint which rejects `sk-sp-…` **coding-plan** keys. The key works against the coding-plan endpoint (`coding.dashscope.aliyuncs.com/v1`) which is what `custom_providers[dashscope]` targets. Verify with: `curl -H "Authorization: Bearer sk-sp-…" https://coding.dashscope.aliyuncs.com/v1/chat/completions -d '{"model":"qwen3-coder-plus","messages":[{"role":"user","content":"ping"}]}'` — should return 200.
 
 ## 5. Health check
 
