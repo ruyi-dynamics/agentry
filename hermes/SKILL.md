@@ -11,7 +11,7 @@ Umbrella skill for managing the [Hermes Agent](https://github.com/NousResearch/h
 
 Parse the sub-command from the invocation:
 - If invoked with `args` (slash command), the first whitespace-delimited token is the sub-command.
-- Otherwise infer from the user's request: install/setup → `setup`; pull/upgrade/refresh → `update`; check/diagnose/health → `doctor`; show/snapshot/report → `status`; snapshot config/save state → `backup`; dashboard/web/url → `dashboard`; approve/pairing/whitelist user → `pairing`; migrate/import openclaw → `claw-migrate`.
+- Otherwise infer from the user's request: install/setup → `setup`; pull/upgrade/refresh → `update`; check/diagnose/health → `doctor`; show/snapshot/report → `status`; snapshot config/save state → `backup`; dashboard/web/url → `dashboard`; gateway/daemon/messaging service/install service → `gateway`; approve/pairing/whitelist user → `pairing`; install local skill / cron / schedule → `skills`; migrate/import openclaw → `claw-migrate`.
 
 Then **Read the matching sub-doc and follow it**:
 
@@ -23,7 +23,9 @@ Then **Read the matching sub-doc and follow it**:
 | `status`        | `status.md`        |
 | `backup`        | `backup.md`        |
 | `dashboard`     | `dashboard.md`     |
+| `gateway`       | `gateway.md`       |
 | `pairing`       | `pairing.md`       |
+| `skills`        | `skills.md`        |
 | `claw-migrate`  | `claw-migrate.md`  |
 
 If the sub-command is missing or unrecognized, print this menu and stop:
@@ -35,8 +37,10 @@ If the sub-command is missing or unrecognized, print this menu and stop:
   doctor        hermes doctor (--fix optional) and interpret output
   status        Read-only health snapshot (hermes status [--all|--deep])
   backup        hermes backup [--quick] — zip of ~/.hermes/ (excludes hermes-agent/)
-  dashboard     Open the Hermes web dashboard (port 9119)
+  dashboard     Open the Hermes web dashboard (foreground command, port 9119)
+  gateway       Manage the messaging + cron daemon (install/start/stop/status)
   pairing       Approve/revoke per-user DM pairing codes
+  skills        Install local agentry skills into Hermes; schedule via cron
   claw-migrate  hermes claw migrate — pull settings/memory/skills from OpenClaw
 ```
 
