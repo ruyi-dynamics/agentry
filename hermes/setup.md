@@ -97,12 +97,12 @@ Then either restart any running `hermes gateway` or just re-launch `hermes`.
 
 ```bash
 hermes model                           # interactive picker
-hermes config set model.default <id>   # comment-preserving direct set
+hermes config set model.default <id>   # direct set
 # OR open editor:
 hermes config edit
 ```
 
-**Always prefer `hermes config set` over hand-editing config.yaml**: PyYAML's `safe_dump` strips embedded comments and the file ships with ~46KB of inline documentation that's worth keeping. `hermes config set` preserves it.
+**Heads-up: comments in `config.yaml` are unpreservable through any Hermes write.** The file ships with ~46 KB of inline documentation comments (~826 of them), but `hermes config set`, `hermes claw migrate`, and any hand-edit-via-PyYAML all serialize the YAML and strip every comment in the process. After your first write, `config.yaml` shrinks from ~50 KB to ~4–5 KB. This is by design (Hermes uses PyYAML's `safe_dump`); restore from the snapshot at `~/.hermes/state-snapshots/<initial>/config.yaml` is the only recovery, but it'll be wiped on the next write again. Don't waste time fighting it — accept the loss; the upstream README and `hermes config show --help` describe each option.
 
 For parity with the OpenClaw default we configured (Tao Wei OpenAI), candidates:
 - `openai/gpt-4o-mini` via OpenRouter — universally cheap, ~$0.15/1M
