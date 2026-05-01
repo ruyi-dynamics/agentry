@@ -1,0 +1,12 @@
+[botdetection.ip_limit]
+# disable IP-based rate limiting
+link_token = false
+
+[botdetection.ip_lists]
+# block no IPs
+block_ip = []
+pass_ip = ["0.0.0.0/0", "::/0"]
+
+[botdetection.ip_limit.filter_link_token]
+# disable link token filter
+enabled = false
